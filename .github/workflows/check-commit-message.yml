@@ -1,22 +1,32 @@
-name: Commit Message Validation
+name: Commit Message Check
 
 on:
   push:
+    branches:
+      - '*'
+    # Exclude Dependabot from triggering the workflow
+    paths-ignore:
+      - 'dependabot/**'
 
 jobs:
   check-commit-message:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check Commit Message
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check commit messages
       run: |
-        COMMIT_MESSAGE=$(git log --format=%B -n 1 $GITHUB_SHA)
-        # Skip validation for Dependabot's commits
-        if [[ "$COMMIT_MESSAGE" == *"dependabot"* ]]; then
-          echo "Skipping commit message validation for Dependabot's commits."
-        else
-          if ! echo "$COMMIT_MESSAGE" | grep -E '([A-Z]+-\d+)'; then
-            echo "Error: Commit message does not include a Jira Issue Key."
+        # Get the list of commit messages in the current push
+        COMMIT_MESSAGES=$(git log --pretty=format:"%s" ${{ github.event.before }}..${{ github.sha }})
+
+        # Loop through each commit message and check for Jira Issue Key pattern
+        for COMMIT_MESSAGE in $COMMIT_MESSAGES; do
+          if [[ $COMMIT_MESSAGE =~ [A-Z]+-[0-9]+ ]]; then
+            echo "Commit message is valid: $COMMIT_MESSAGE"
+          else
+            echo "Commit message is invalid: $COMMIT_MESSAGE"
             exit 1
           fi
-        fi
+        done
