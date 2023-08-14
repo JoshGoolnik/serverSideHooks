@@ -16,15 +16,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Check commit messages
+    - name: Get commit range
       run: |
-        # Get the list of commit messages in the current push
         if [[ -z "${{ github.event.before }}" ]]; then
-          RANGE="HEAD"
+          RANGE="${{ github.sha }}"
         else
           RANGE="${{ github.event.before }}..${{ github.sha }}"
         fi
-        COMMIT_MESSAGES=$(git log --pretty=format:"%s" $RANGE)
+        echo "Commit range: $RANGE"
+        echo "::set-output name=commit_range::$RANGE"
+
+    - name: Check commit messages
+      run: |
+        COMMIT_RANGE="${{ steps.get_commit_range.outputs.commit_range }}"
+        COMMIT_MESSAGES=$(git log --pretty=format:"%s" $COMMIT_RANGE)
 
         # Loop through each commit message and check for Jira Issue Key pattern
         for COMMIT_MESSAGE in $COMMIT_MESSAGES; do
