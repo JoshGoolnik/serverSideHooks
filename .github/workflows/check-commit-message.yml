@@ -19,7 +19,12 @@ jobs:
     - name: Check commit messages
       run: |
         # Get the list of commit messages in the current push
-        COMMIT_MESSAGES=$(git log --pretty=format:"%s" ${{ github.event.before }}..${{ github.sha }})
+        if [[ -z "${{ github.event.before }}" ]]; then
+          RANGE="HEAD"
+        else
+          RANGE="${{ github.event.before }}..${{ github.sha }}"
+        fi
+        COMMIT_MESSAGES=$(git log --pretty=format:"%s" $RANGE)
 
         # Loop through each commit message and check for Jira Issue Key pattern
         for COMMIT_MESSAGE in $COMMIT_MESSAGES; do
